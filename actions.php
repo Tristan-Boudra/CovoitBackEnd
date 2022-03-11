@@ -2,16 +2,12 @@
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Methods: GET, POST, PUT");
     header("Access-Control-Allow-Headers: Content-Type");
-    error_reporting(E_ALL);
-ini_set("display_errors", 1);
 
-$connect = new PDO('mysql:host=localhost;dbname=covoit', 'root','', array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
+$connect = new PDO('mysql:host=localhost;dbname=covoit', 'root','');
 
 $received_data = json_decode(file_get_contents('php://input'));
-// var_dump($received_data);
-// echo "lol"
-// $data = array();
 
+//Toute les motorisation
 if($received_data->action == 'fetchall_motorization') {
     $query = 'SELECT id_motorization,libellet FROM `motorization`';
     $statement = $connect->prepare($query);
@@ -22,12 +18,13 @@ if($received_data->action == 'fetchall_motorization') {
     echo json_encode($data);
 }
 if($received_data->action == 'fetchall_vehicles_for_user') {
+    $tel = htmlspecialchars($received_data->tel);
     $query2 = "SET @row_id = 0; ";
     $query = "SELECT id_vehicles, @row_id := @row_id + 1 AS row_id, vehicles.id_motorization, libellet AS motorization, vehicles.id_user, vehicle_name, nb_places, color 
                   FROM `vehicles`, `motorization`, `users`
                   WHERE motorization.id_motorization = vehicles.id_motorization
                   AND vehicles.id_user = users.id_user
-                  AND users.tel = $received_data->tel";
+                  AND users.tel = $tel";
     $statement2 = $connect->prepare($query2);
     $statement = $connect->prepare($query);
     $statement2->execute();
@@ -40,12 +37,13 @@ if($received_data->action == 'fetchall_vehicles_for_user') {
     }
 }
 if($received_data->action == 'fetch_vehicle_for_user') {
+    $tel = htmlspecialchars($received_data->tel);
     $query2 = "SET @row_id = 0; ";
     $query = "SELECT id_vehicles, @row_id := @row_id + 1 AS row_id, vehicles.id_motorization, libellet AS motorization, vehicles.id_user, vehicle_name, nb_places, color 
                   FROM `vehicles`, `motorization`, `users`
                   WHERE motorization.id_motorization = vehicles.id_motorization
                   AND vehicles.id_user = users.id_user
-                  AND users.tel = $received_data->tel";
+                  AND users.tel = $tel";
     $statement2 = $connect->prepare($query2);
     $statement = $connect->prepare($query);
     $statement2->execute();
@@ -55,11 +53,15 @@ if($received_data->action == 'fetch_vehicle_for_user') {
     }
     echo json_encode($data[$received_data->vehicleRowId - 1]);
 }
+
+//Supprimer une véhicule
 if($received_data->action == 'delete_vehicle_for_user') {
+    $vehicleId = htmlspecialchars($received_data->vehicleId);
+    $tel = htmlspecialchars($received_data->tel);
     $query = "DELETE `vehicles` FROM `vehicles`,`users` 
-                WHERE `vehicles`.`id_vehicles` = $received_data->vehicleId 
+                WHERE `vehicles`.`id_vehicles` = $vehicleId 
                 AND vehicles.id_user = users.id_user 
-                AND users.tel = '$received_data->tel'";
+                AND users.tel = '$tel'";
     $statement = $connect->prepare($query);
     $statement->execute();
     while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
@@ -67,29 +69,16 @@ if($received_data->action == 'delete_vehicle_for_user') {
     }
     echo json_encode($data);
 }
+
+//Ajouter un véhicule
 if($received_data->action == 'add_vehicle') {
-    $query = "INSERT INTO `vehicles` (`id_vehicles`, `id_motorization`, `id_user`, `vehicle_name`, `nb_places`, `color` , `date_create`, `date_modification`) 
-                VALUES (NULL, '$received_data->id_motorization', '$received_data->id_user', '$received_data->vehicle_name', '$received_data->nb_places', '$received_data->color', NOW(), NOW() );";
-    $statement = $connect->prepare($query);
-    $statement->execute();
-    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-        $data[] = $row;
-    }
-    echo $query;
-    echo json_encode($data);
-}
-if($received_data->action == 'fetchall_city') {
-    $query = "SELECT ville_id, ville_nom_reel, ville_code_postal, ville_population_2012 FROM `villes_france_free` ORDER BY `ville_population_2012` DESC";
-    $statement = $connect->prepare($query);
-    $statement->execute();
-    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-        $data[] = $row;
-    }
-    echo json_encode($data);
-}
-
-if($received_data->action == 'fetch_personnal_information') {
-    $query = "SELECT * FROM `users`";
+    $id_motorization = htmlspecialchars($received_data->id_motorization);
+    $id_user = htmlspecialchars($received_data->id_user);
+    $vehicle_name = htmlspecialchars($received_data->vehicle_name);
+    $nb_places = htmlspecialchars($received_data->nb_places);
+    $color = htmlspecialchars($received_data->color);
+    $query = "INSERT INTO `vehicles` (`id_vehicles`, `id_motorization`, `id_user`, `vehicle_name`, `nb_places`, `color`) 
+                VALUES (NULL, '$id_motorization', '$id_user', '$vehicle_name', '$nb_places', '$color');";
     $statement = $connect->prepare($query);
     $statement->execute();
     while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
@@ -98,125 +87,79 @@ if($received_data->action == 'fetch_personnal_information') {
     echo json_encode($data);
 }
 
-if($received_data->action == 'create_trip') {
-    $starting_date = date("Y/m/d", strtotime($received_data->starting_date));
-    $departure_time = $received_data->departure_time;
-    $id_vehicles = $received_data->id_vehicles;
-    $id_user = $received_data->id_user;
-    $id_starting_point_city = $received_data->id_starting_point_city;
-    $id_end_point_city = $received_data->id_end_point_city;
-    $query = "
-        BEGIN;
-            INSERT INTO `trips` (`id_trip`, `date_create`, `starting_date`) 
-                VALUES (NULL, NOW(), '$starting_date');
-            SET @id_trip = LAST_INSERT_ID();
-            INSERT INTO `paths` (`id_path`, `id_trip`, `departure_time`) 
-                VALUES (NULL, @id_trip, '$departure_time');
-            SET @id_path = LAST_INSERT_ID();
-            INSERT INTO `driver` (`id_driver`, `id_trip`, `id_user`, `id_vehicles`) 
-                VALUES (NULL, @id_trip, '$id_user', '$id_vehicles');
-            INSERT INTO `starting_point` (`id_starting_point`, `id_path`, `id_city`) 
-                VALUES (NULL, @id_path, '$id_starting_point_city');
-            INSERT INTO `end_point` (`id_end_point`, `id_path`, `id_city`) 
-                VALUES (NULL, @id_path, '$id_end_point_city');
-        COMMIT;
-    ";
+//Informations personnelles
+if($received_data->action == 'fetch_personal_information') {
+    $userTel = htmlspecialchars($received_data->userTel);
+    $userName = htmlspecialchars($received_data->userName);
+    $userSurname = htmlspecialchars($received_data->userSurname);
+    $query = "SELECT * FROM `users` WHERE tel = '$userTel'";
     $statement = $connect->prepare($query);
     $statement->execute();
     while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
         $data[] = $row;
     }
-    echo $query;
-    echo json_encode($data);
+    echo json_encode($data[0]);
 }
 
-if($received_data->action == 'add_trip_passenger') {
-    $trip_id = $received_data->trip_id;
-    $departure_time = $received_data->departure_time;
-    $id_user = $received_data->id_user;
-    $id_starting_point_city = $received_data->id_starting_point_city;
-    $query = "
-        BEGIN;
-            INSERT INTO `paths` (`id_path`, `id_trip`, `departure_time`) 
-                VALUES (NULL, '$trip_id', '$departure_time')
-            SET @id_path = LAST_INSERT_ID();
-            INSERT INTO `starting_point` (`id_starting_point`, `id_path`, `id_city`) 
-                VALUES (NULL, @id_path, '$id_starting_point_city')
-            INSERT INTO `passenger` (`id_passenger`, `id_path`, `id_user`) 
-                VALUES (NULL, @id_path, '$id_user')
-        COMMIT;
-    ";
-    $statement = $connect->prepare($query);
-    $statement->execute();
+//Inscription
+if($received_data->action == 'new_registration') {
+    $surname = htmlspecialchars($received_data->surname);
+    $name = htmlspecialchars($received_data->name);
+    $tel = htmlspecialchars($received_data->tel);
+    $password = htmlspecialchars($received_data->password);
+    $password_confirmed = htmlspecialchars($received_data->password_confirmed);
+    $user_password_hashed = hash('sha256', $password);
+    $user_password_confirmed_hashed = hash('sha256', $password_confirmed);
+
+    if($user_password_hashed == $user_password_confirmed_hashed){
+        $query = "INSERT INTO `users` (`l_name`, `f_name`, `tel`, `password`) 
+                    VALUES ('$surname', '$name', '$tel', '$user_password_hashed');";
+        $statement = $connect->prepare($query);
+        $statement->execute();
+    } else { echo("Mauvais mot de passe"); }
+
     while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
         $data[] = $row;
     }
-    echo $query;
     echo json_encode($data);
 }
-if($received_data->action == 'fetchall_trip_for_user') {
-    $user_tel = $received_data->tel;
-    // $query = "
-    //     SELECT trips.id_trip, trips.date_create, trips.starting_date, paths.id_path, paths.departure_time, end_point.id_city AS end_point_city_id, starting_point.id_city AS starting_point_city_id, driver.id_driver, driver.id_vehicles, vehicles.vehicle_name, users.l_name, users.f_name
-    //     FROM `trips`, `paths`, `end_point`, `starting_point`, `driver`, `vehicles`, `users`
-    //     WHERE trips.id_trip = paths.id_trip
-    //     AND driver.id_trip = trips.id_trip
-    //     AND end_point.id_path = paths.id_path
-    //     AND starting_point.id_path = paths.id_path
-    //     AND vehicles.id_vehicles = driver.id_vehicles
-    //     AND users.id_user = driver.id_user
-    //     AND users.tel = '$user_tel'
-    // ";
-    $query = "
-        SELECT *
-        FROM trips
-        JOIN paths
-        ON trips.id_trip = paths.id_trip
-        JOIN end_point
-        ON paths.id_path = end_point.id_path
-        JOIN driver
-        ON trips.id_trip = driver.id_trip
-        JOIN users
-        On driver.id_user = users.id_user
-        JOIN vehicles
-        ON driver.id_vehicles = vehicles.id_vehicles
-        JOIN villes_france_free
-        ON end_point.id_city = villes_france_free.ville_id
-    ";
-    // $query = "
-    //     SELECT *
-    //     FROM trips
-    // ";
-    
+
+//Login
+if($received_data->action == 'verif_login') {
+    $user_tel = htmlspecialchars($received_data->tel);
+    $user_password = htmlspecialchars($received_data->password);
+    $query = "SELECT tel,password FROM `users` WHERE tel= '$user_tel'";
     $statement = $connect->prepare($query);
     $statement->execute();
-    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-        // print_r($row);
+    $row = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        $id_trip = $row['id_trip'];
-        $query2 = "
-            SELECT *
-            FROM paths
-            JOIN passenger
-            ON paths.id_path = passenger.id_path
-            JOIN users
-            ON passenger.id_user = users.id_user
-            WHERE paths.id_trip = $id_trip
-        ";
-        $statement2 = $connect->prepare($query2);
-        $statement2->execute();
-        while($row_path = $statement2->fetch(PDO::FETCH_ASSOC)) {
-            $data_path[] = $row_path;
-            $row['paths'] = $data_path;
-        };
-        $data[] = $row;
-    }
-    // echo $query;
-    echo json_encode($data);
-    // echo "<br>";
-    // echo "<br>";
-    // echo "<br>";
-    // echo json_encode($data_path);
+    $resultTel = $row[0]['tel'];
+    $resultPassword = $row[0]['password'];
+    if($resultTel == $user_tel){
+        $user_password_hashed = hash('sha256', $user_password);
+        if ($user_password_hashed === $resultPassword) {
+            echo json_encode("OK");
+        }  else { echo("Mauvais password");}
+    } else { echo("Mauvais tel ou password"); }
 }
 
-?>
+//Edit password
+if($received_data->action == 'fetch_edit_password') {
+    $query = "SELECT password FROM `users`";
+        if($query == $received_data->old_password){
+            if($received_data->new_password == $received_data->new_password_confirmed){
+                $query2 = "INSERT INTO `users` (`password`)
+                            VALUES ('$received_data->new_password');";
+            } else{
+                echo("Le mot de passe de confirmation est incorrecte");
+            }
+        } else{
+            echo("L'ancien mot de passe est incorrecte");
+        }
+
+    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
+        $data[] = $row;
+    }
+    echo json_encode($data);
+}
+?> 
