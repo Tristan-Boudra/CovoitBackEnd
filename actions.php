@@ -117,7 +117,6 @@ if($received_data->action == 'new_registration') {
         $statement = $connect->prepare($query);
         $statement->execute();
     } else { echo("Mauvais mot de passe"); }
-
     while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
         $data[] = $row;
     }
@@ -132,7 +131,7 @@ if($received_data->action == 'verif_login') {
     $statement = $connect->prepare($query);
     $statement->execute();
     $row = $statement->fetchAll(PDO::FETCH_ASSOC);
-
+    
     $resultTel = $row[0]['tel'];
     $resultPassword = $row[0]['password'];
     if($resultTel == $user_tel){
@@ -145,21 +144,27 @@ if($received_data->action == 'verif_login') {
 
 //Edit password
 if($received_data->action == 'fetch_edit_password') {
-    $query = "SELECT password FROM `users`";
-        if($query == $received_data->old_password){
-            if($received_data->new_password == $received_data->new_password_confirmed){
-                $query2 = "INSERT INTO `users` (`password`)
-                            VALUES ('$received_data->new_password');";
-            } else{
-                echo("Le mot de passe de confirmation est incorrecte");
-            }
-        } else{
-            echo("L'ancien mot de passe est incorrecte");
-        }
+    $user_old_password = htmlspecialchars($received_data->old_password);
+    $user_new_password = htmlspecialchars($received_data->new_password);
+    $user_new_password_confirmed = htmlspecialchars($received_data->new_password_confirmed);
+    $user_tel = htmlspecialchars($received_data->tel);
+    $old_password_hashed = hash('sha256', $user_old_password);
+    $new_password_hashed = hash('sha256', $user_new_password);
+    $new_password_confirmed_hashed = hash('sha256', $user_new_password_confirmed);
 
-    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-        $data[] = $row;
-    }
-    echo json_encode($data);
+    $query2 = "SELECT password FROM `users` WHERE password= '$old_password_hashed'";
+    $statement2 = $connect->prepare($query2);
+    $statement2->execute();
+    $row = $statement2->fetch(PDO::FETCH_ASSOC);
+
+    $resultPassword = $row['password'];
+    if($resultPassword == $old_password_hashed){
+        if($new_password_hashed == $new_password_confirmed_hashed){
+            $query = "UPDATE `users` SET `password` = '$new_password_hashed' WHERE tel= '$user_tel';";
+            $statement = $connect->prepare($query);
+            $statement->execute();
+            echo json_encode("OK");
+        } else { echo("Le mot de passe de confirmation est incorrecte"); }
+    } else { echo("Ancien mot de passe incorecte"); }
 }
 ?> 
