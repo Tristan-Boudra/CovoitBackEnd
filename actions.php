@@ -116,11 +116,12 @@ if($received_data->action == 'new_registration') {
                     VALUES ('$surname', '$name', '$tel', '$user_password_hashed');";
         $statement = $connect->prepare($query);
         $statement->execute();
+        echo json_encode("OK");
     } else { echo("Mauvais mot de passe"); }
     while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
         $data[] = $row;
     }
-    echo json_encode($data);
+    //echo json_encode($data);
 }
 
 //Login
@@ -159,12 +160,13 @@ if($received_data->action == 'fetch_edit_password') {
 
     $resultPassword = $row['password'];
     if($resultPassword == $old_password_hashed){
+      echo json_encode("old_password_ok");
         if($new_password_hashed == $new_password_confirmed_hashed){
             $query = "UPDATE `users` SET `password` = '$new_password_hashed' WHERE tel= '$user_tel';";
             $statement = $connect->prepare($query);
             $statement->execute();
-            echo json_encode("OK");
-        } else { echo("Le mot de passe de confirmation est incorrecte"); }
-    } else { echo("Ancien mot de passe incorecte"); }
+            echo json_encode("password_confirmed_ok");
+        } else { echo json_encode("password_confirmed_incorrect"); }
+    } else { echo json_encode("old_password_incorrect"); }
 }
 ?> 
