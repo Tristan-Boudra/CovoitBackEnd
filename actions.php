@@ -115,8 +115,8 @@ if($received_data->action == 'new_registration') {
     $statement2 = $connect->prepare($query2);
     $statement2->execute();
     $row = $statement2->fetch(PDO::FETCH_ASSOC);
-    $resultTel = $row['tel'];
     
+    $resultTel = $row['tel'];
     if ($resultTel != $tel) {
         if($user_password_hashed == $user_password_confirmed_hashed){
             $query = "INSERT INTO `users` (`l_name`, `f_name`, `tel`, `password`, `date_create`, `date_modification`) 
@@ -168,7 +168,6 @@ if($received_data->action == 'fetch_edit_password') {
     $row = $statement2->fetch(PDO::FETCH_ASSOC);
 
     $resultPassword = $row['password'];
-    echo $resultTel;
     if($resultPassword == $old_password_hashed){
       echo json_encode("old_password_ok");
         if($new_password_hashed == $new_password_confirmed_hashed){
