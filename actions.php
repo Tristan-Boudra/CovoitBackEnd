@@ -1,4 +1,4 @@
- <?php
+<?php
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Methods: GET, POST, PUT");
     header("Access-Control-Allow-Headers: Content-Type");
@@ -90,8 +90,8 @@ if($received_data->action == 'add_vehicle') {
 //Informations personnelles
 if($received_data->action == 'fetch_personal_information') {
     $userTel = htmlspecialchars($received_data->userTel);
-    $userName = htmlspecialchars($received_data->userName);
-    $userSurname = htmlspecialchars($received_data->userSurname);
+    //$userName = htmlspecialchars($received_data->userName);
+    //$userSurname = htmlspecialchars($received_data->userSurname);
     $query = "SELECT * FROM `users` WHERE tel = '$userTel'";
     $statement = $connect->prepare($query);
     $statement->execute();
@@ -110,19 +110,28 @@ if($received_data->action == 'new_registration') {
     $password_confirmed = htmlspecialchars($received_data->password_confirmed);
     $user_password_hashed = hash('sha256', $password);
     $user_password_confirmed_hashed = hash('sha256', $password_confirmed);
-
-    if($user_password_hashed == $user_password_confirmed_hashed){
-        $query = "INSERT INTO `users` (`l_name`, `f_name`, `tel`, `password`) 
-                    VALUES ('$surname', '$name', '$tel', '$user_password_hashed');";
-        $statement = $connect->prepare($query);
-        $statement->execute();
-        echo json_encode("OK");
-    } else { echo("Mauvais mot de passe"); }
-    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-        $data[] = $row;
-    }
-    //echo json_encode($data);
+    
+    $query2 = "SELECT tel from `users` WHERE tel= '$tel'";
+    $statement2 = $connect->prepare($query2);
+    $statement2->execute();
+    $row = $statement2->fetch(PDO::FETCH_ASSOC);
+    $resultTel = $row['tel'];
+    
+    if ($resultTel != $tel) {
+        if($user_password_hashed == $user_password_confirmed_hashed){
+            $query = "INSERT INTO `users` (`l_name`, `f_name`, `tel`, `password`, `date_create`, `date_modification`) 
+                        VALUES ('$surname', '$name', '$tel', '$user_password_hashed', NOW(), NOW());";
+            $statement = $connect->prepare($query);
+            $statement->execute();
+            echo json_encode("OK");
+        } else { echo("Mauvais mot de passe"); }
+        while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
+            $data[] = $row;
+        }
+        // echo json_encode($data);
+    } else { echo("Vous avez déjà un compte"); }
 }
+
 
 //Login
 if($received_data->action == 'verif_login') {
@@ -159,6 +168,7 @@ if($received_data->action == 'fetch_edit_password') {
     $row = $statement2->fetch(PDO::FETCH_ASSOC);
 
     $resultPassword = $row['password'];
+    echo $resultTel;
     if($resultPassword == $old_password_hashed){
       echo json_encode("old_password_ok");
         if($new_password_hashed == $new_password_confirmed_hashed){
