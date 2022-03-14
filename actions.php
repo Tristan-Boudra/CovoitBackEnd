@@ -169,13 +169,13 @@ if($received_data->action == 'fetch_edit_password') {
 
     $resultPassword = $row['password'];
     if($resultPassword == $old_password_hashed){
-      echo json_encode("old_password_ok");
+      //echo json_encode("old_password_ok");
         if($new_password_hashed == $new_password_confirmed_hashed){
             $query = "UPDATE `users` SET `password` = '$new_password_hashed' WHERE tel= '$user_tel';";
             $statement = $connect->prepare($query);
             $statement->execute();
-            echo json_encode("password_confirmed_ok");
-        } else { echo json_encode("password_confirmed_incorrect"); }
-    } else { echo json_encode("old_password_incorrect"); }
+            echo("password_confirmed_ok");
+        } else { echo("password_confirmed_incorrect"); }
+    } else { echo("old_password_incorrect"); }
 }
-?> 
+?>
