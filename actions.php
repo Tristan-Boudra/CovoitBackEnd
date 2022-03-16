@@ -90,8 +90,6 @@ if($received_data->action == 'add_vehicle') {
 //Informations personnelles
 if($received_data->action == 'fetch_personal_information') {
     $userTel = htmlspecialchars($received_data->userTel);
-    //$userName = htmlspecialchars($received_data->userName);
-    //$userSurname = htmlspecialchars($received_data->userSurname);
     $query = "SELECT * FROM `users` WHERE tel = '$userTel'";
     $statement = $connect->prepare($query);
     $statement->execute();
@@ -128,7 +126,6 @@ if($received_data->action == 'new_registration') {
         while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
             $data[] = $row;
         }
-        // echo json_encode($data);
     } else { echo("Vous avez déjà un compte"); }
 }
 
@@ -169,7 +166,6 @@ if($received_data->action == 'fetch_edit_password') {
 
     $resultPassword = $row['password'];
     if($resultPassword == $old_password_hashed){
-      //echo json_encode("old_password_ok");
         if($new_password_hashed == $new_password_confirmed_hashed){
             $query = "UPDATE `users` SET `password` = '$new_password_hashed' WHERE tel= '$user_tel';";
             $statement = $connect->prepare($query);
@@ -186,9 +182,30 @@ if($received_data->action == 'fetch_edit_personal_information') {
     $user_old_tel = htmlspecialchars($received_data->old_tel);
     $user_tel = htmlspecialchars($received_data->tel);
 
-    $query = "UPDATE `users` SET `l_name` = '$user_surname', `f_name` = '$user_name', `tel` = '$user_tel' WHERE tel= '$user_old_tel';";
+    $query = "UPDATE `users` SET `l_name` = '$user_surname', `f_name` = '$user_name', `tel` = '$user_tel', `date_modification` = NOW() WHERE tel= '$user_old_tel';";
     $statement = $connect->prepare($query);
     $statement->execute();
     echo("modification_ok");
+}
+
+//Delete Account
+if($received_data->action == 'fetch_delete_account') {
+    $user_tel = htmlspecialchars($received_data->tel);
+
+    $query2 = "SELECT tel FROM `users` WHERE tel= '$user_tel'"
+    $statement2 = $connect->prepare($query2);
+    $statement2->execute();
+    $row2 = $statement2->fetch(PDO::FETCH_ASSOC);
+
+    $resultTelAccount = $row['tel2'];
+
+    if($user_tel == $resultTelAccount){
+        $query = "DELETE FROM `users` WHERE tel= '$user_tel'";
+        $statement = $connect->prepare($query);
+        $statement->execute();
+        // $row = $statement->fetch(PDO::FETCH_ASSOC);
+        echo json_encode("Account_deleted");
+        echo json_encode($resultDeleteAccount);
+    } else { echo json_encode("Account_not_delete"); }
 }
 ?>
