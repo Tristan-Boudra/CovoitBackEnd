@@ -178,4 +178,17 @@ if($received_data->action == 'fetch_edit_password') {
         } else { echo("password_confirmed_incorrect"); }
     } else { echo("old_password_incorrect"); }
 }
+
+//Edit PersonalInformation
+if($received_data->action == 'fetch_edit_personal_information') {
+    $user_surname = htmlspecialchars($received_data->surname);
+    $user_name = htmlspecialchars($received_data->name);
+    $user_old_tel = htmlspecialchars($received_data->old_tel);
+    $user_tel = htmlspecialchars($received_data->tel);
+
+    $query = "UPDATE `users` SET `l_name` = '$user_surname', `f_name` = '$user_name', `tel` = '$user_tel' WHERE tel= '$user_old_tel';";
+    $statement = $connect->prepare($query);
+    $statement->execute();
+    echo("modification_ok");
+}
 ?>
