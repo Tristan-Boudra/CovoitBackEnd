@@ -51,7 +51,6 @@ if($received_data->action == 'fetch_vehicle_for_user') {
   while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
       $data[] = $row;
   }
-  // echo $query2;
   echo json_encode($data[$received_data->vehicleRowId - 1]);
 }
 
@@ -94,7 +93,7 @@ if($received_data->action == 'add_vehicle') {
 //Informations personnelles
 if($received_data->action == 'fetch_personal_information') {
   $userTel = htmlspecialchars($received_data->userTel);
-  $query = "SELECT * FROM `users` WHERE tel = '$userTel'";
+  $query = "SELECT f_name, l_name, tel FROM `users` WHERE tel = '$userTel'";
   $statement = $connect->prepare($query);
   $statement->execute();
   while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
@@ -102,6 +101,18 @@ if($received_data->action == 'fetch_personal_information') {
   }
   echo json_encode($data[0]);
 }
+
+//Page Home
+if($received_data->action == 'fetch_home_name') {
+    $userTel = htmlspecialchars($received_data->userTel);
+    $query = "SELECT f_name FROM `users` WHERE tel = '$userTel'";
+    $statement = $connect->prepare($query);
+    $statement->execute();
+    while($row = $statement->fetch(PDO::FETCH_ASSOC)) {
+        $data[] = $row;
+    }
+    echo json_encode($data[0]);
+  }
 
 //Inscription
 if($received_data->action == 'new_registration') {
@@ -184,6 +195,7 @@ if($received_data->action == 'fetch_edit_password') {
       } else { echo json_encode("password_confirmed_incorrect"); }
     } else { echo json_encode("password_confirmed_incorrect"); }
   } else { echo json_encode("password_confirmed_incorrect"); }
+  echo json_encode($data[0]);
 }
 
 // Recupere toutes les ville
@@ -268,6 +280,7 @@ if($received_data->action == 'fetch_delete_account') {
       echo json_encode("Account_deleted");
   } else { echo json_encode("Account_not_delete"); }
 }
+
 // Ajoute un passager a un voyage
 if($received_data->action == 'add_trip_passenger') {
     $idTrip = $received_data->idTrip;
@@ -388,7 +401,7 @@ if($received_data->action == 'fetchall_trip_for_user_up_to_date') {
         JOIN villes_france_free
         ON end_point.id_city = villes_france_free.ville_id
         WHERE users.tel = '$user_tel'
-        AND trips.starting_date >= NOW()
+        AND trips.starting_date >= DATE( NOW() )
         ORDER BY trips.starting_date
         ";
         $statement = $connect->prepare($query);
