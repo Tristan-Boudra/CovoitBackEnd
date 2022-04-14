@@ -3,11 +3,12 @@
     header("Access-Control-Allow-Methods: GET, POST, PUT");
     header("Access-Control-Allow-Headers: Content-Type");
 
+// Connection à la BDD
 $connect = new PDO('mysql:host=localhost;dbname=covoit', 'root','', array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
 
 $received_data = json_decode(file_get_contents('php://input'));
 
-//Toute les motorisation
+//Toute les motorisations
 if($received_data->action == 'fetchall_motorization') {
   $query = 'SELECT id_motorization,libellet FROM `motorization`';
   $statement = $connect->prepare($query);
@@ -198,7 +199,7 @@ if($received_data->action == 'fetch_edit_password') {
   echo json_encode($data[0]);
 }
 
-// Recupere toutes les ville
+// Recupère toutes les villes
 if($received_data->action == 'fetchall_city') {
   $query = "SELECT ville_id, ville_nom_reel, ville_code_postal, ville_population_2012 FROM `villes_france_free` ORDER BY `ville_population_2012` DESC";
   $statement = $connect->prepare($query);
@@ -499,7 +500,6 @@ if($received_data->action == 'fetchall_trip_for_endcity_up_to_date') {
         };
     $data[] = $row;
     }
-    // echo $query;
     echo json_encode($data);
 }
 if($received_data->action == 'fetchall_trip_for_endcity_aproximative_up_to_date') {
